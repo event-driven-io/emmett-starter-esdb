@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import {
   DeciderSpecification,
   IllegalStateError,
@@ -19,7 +18,7 @@ const given = DeciderSpecification.for({
   initialState: getInitialState,
 });
 
-describe('Guest Stay Account', () => {
+void describe('Guest Stay Account', () => {
   const oldTime = new Date();
   const now = new Date();
 
@@ -28,9 +27,9 @@ describe('Guest Stay Account', () => {
   const guestStayAccountId = toGuestStayAccountId(guestId, roomId, now);
   const amount = Math.random() * 100;
 
-  describe('When not existing', () => {
+  void describe('When not existing', () => {
     const notExistingAccount: GuestStayAccountEvent[] = [];
-    it('checks in', () =>
+    void it('checks in', () =>
       given(notExistingAccount)
         .when({
           type: 'CheckIn',
@@ -53,7 +52,7 @@ describe('Guest Stay Account', () => {
           },
         ]));
 
-    it(`doesn't record charge`, () =>
+    void it(`doesn't record charge`, () =>
       given(notExistingAccount)
         .when({
           type: 'RecordCharge',
@@ -67,7 +66,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest account doesn't exist!`,
         ));
 
-    it(`doesn't record payment`, () =>
+    void it(`doesn't record payment`, () =>
       given(notExistingAccount)
         .when({
           type: 'RecordPayment',
@@ -81,7 +80,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest account doesn't exist!`,
         ));
 
-    it(`doesn't checkout`, () =>
+    void it(`doesn't checkout`, () =>
       given(notExistingAccount)
         .when({
           type: 'CheckOut',
@@ -103,7 +102,7 @@ describe('Guest Stay Account', () => {
         ]));
   });
 
-  describe('When checked in', () => {
+  void describe('When checked in', () => {
     const checkedInAccount: GuestStayAccountEvent[] = [
       {
         type: 'GuestCheckedIn',
@@ -116,7 +115,7 @@ describe('Guest Stay Account', () => {
       },
     ];
 
-    it(`doesn't check in`, () =>
+    void it(`doesn't check in`, () =>
       given(checkedInAccount)
         .when({
           type: 'CheckIn',
@@ -131,7 +130,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest is already checked-in!`,
         ));
 
-    it('records charge', () => {
+    void it('records charge', () => {
       given(checkedInAccount)
         .when({
           type: 'RecordCharge',
@@ -153,7 +152,7 @@ describe('Guest Stay Account', () => {
         ]);
     });
 
-    it('records payment', () =>
+    void it('records payment', () =>
       given(checkedInAccount)
         .when({
           type: 'RecordPayment',
@@ -174,7 +173,7 @@ describe('Guest Stay Account', () => {
           },
         ]));
 
-    it('checks out', () =>
+    void it('checks out', () =>
       given(checkedInAccount)
         .when({
           type: 'CheckOut',
@@ -194,7 +193,7 @@ describe('Guest Stay Account', () => {
           },
         ]));
 
-    describe('with unsettled balance', () => {
+    void describe('with unsettled balance', () => {
       const unsettledAccount: GuestStayAccountEvent[] = [
         {
           type: 'GuestCheckedIn',
@@ -215,7 +214,7 @@ describe('Guest Stay Account', () => {
         },
       ];
 
-      it('records charge', () => {
+      void it('records charge', () => {
         given(unsettledAccount)
           .when({
             type: 'RecordCharge',
@@ -237,7 +236,7 @@ describe('Guest Stay Account', () => {
           ]);
       });
 
-      it('records payment', () =>
+      void it('records payment', () =>
         given(unsettledAccount)
           .when({
             type: 'RecordPayment',
@@ -258,7 +257,7 @@ describe('Guest Stay Account', () => {
             },
           ]));
 
-      it(`doesn't check out`, () =>
+      void it(`doesn't check out`, () =>
         given(unsettledAccount)
           .when({
             type: 'CheckOut',
@@ -280,7 +279,7 @@ describe('Guest Stay Account', () => {
           ]));
     });
 
-    describe('with settled balance', () => {
+    void describe('with settled balance', () => {
       const settledAccount: GuestStayAccountEvent[] = [
         {
           type: 'GuestCheckedIn',
@@ -309,7 +308,7 @@ describe('Guest Stay Account', () => {
         },
       ];
 
-      it('records charge', () => {
+      void it('records charge', () => {
         given(settledAccount)
           .when({
             type: 'RecordCharge',
@@ -331,7 +330,7 @@ describe('Guest Stay Account', () => {
           ]);
       });
 
-      it('records payment', () =>
+      void it('records payment', () =>
         given(settledAccount)
           .when({
             type: 'RecordPayment',
@@ -352,7 +351,7 @@ describe('Guest Stay Account', () => {
             },
           ]));
 
-      it(`checks out`, () =>
+      void it(`checks out`, () =>
         given(settledAccount)
           .when({
             type: 'CheckOut',
@@ -374,7 +373,7 @@ describe('Guest Stay Account', () => {
     });
   });
 
-  describe('When checked out', () => {
+  void describe('When checked out', () => {
     const checkedOutAccount: GuestStayAccountEvent[] = [
       {
         type: 'GuestCheckedIn',
@@ -411,7 +410,7 @@ describe('Guest Stay Account', () => {
       },
     ];
 
-    it(`doesn't check in`, () =>
+    void it(`doesn't check in`, () =>
       given(checkedOutAccount)
         .when({
           type: 'CheckIn',
@@ -426,7 +425,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest account is already checked out`,
         ));
 
-    it(`doesn't record charge`, () =>
+    void it(`doesn't record charge`, () =>
       given(checkedOutAccount)
         .when({
           type: 'RecordCharge',
@@ -440,7 +439,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest account is already checked out`,
         ));
 
-    it(`doesn't record payment`, () =>
+    void it(`doesn't record payment`, () =>
       given(checkedOutAccount)
         .when({
           type: 'RecordPayment',
@@ -454,7 +453,7 @@ describe('Guest Stay Account', () => {
           (error) => error.message === `Guest account is already checked out`,
         ));
 
-    it(`doesn't checkout`, () =>
+    void it(`doesn't checkout`, () =>
       given(checkedOutAccount)
         .when({
           type: 'CheckOut',

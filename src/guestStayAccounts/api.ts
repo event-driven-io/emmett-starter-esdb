@@ -6,6 +6,7 @@ import {
 } from '@event-driven-io/emmett';
 import {
   Created,
+  Forbidden,
   NoContent,
   NotFound,
   OK,
@@ -64,7 +65,11 @@ type GetShoppingCartRequest = Request<
 export const guestStayAccountsApi =
   (
     eventStore: EventStore,
-    getUnitPrice: (_productId: string) => Promise<number>,
+    doesGuestStayExist: (
+      guestId: string,
+      roomId: string,
+      day: Date,
+    ) => Promise<boolean>,
     getCurrentTime: () => Date,
   ): WebApiSetup =>
   (router: Router) => {
@@ -75,6 +80,9 @@ export const guestStayAccountsApi =
         const guestId = assertNotEmptyString(request.params.guestId);
         const roomId = assertNotEmptyString(request.params.roomId);
         const now = getCurrentTime();
+
+        if (!(await doesGuestStayExist(guestId, roomId, now)))
+          return Forbidden();
 
         const guestStayAccountId = toGuestStayAccountId(guestId, roomId, now);
 
@@ -122,7 +130,7 @@ export const guestStayAccountsApi =
       }),
     );
 
-    // Confirm Shopping Cart
+    // Record Payment
     router.post(
       '/guests/:guestId/stays/:roomId/periods/:checkInDate/payments',
       on(async (request: RecordPaymentRequest) => {
@@ -157,11 +165,17 @@ export const guestStayAccountsApi =
           metadata: { now: getCurrentTime() },
         };
 
-        await handle(eventStore, guestStayAccountId, (state) =>
-          checkOut(command, state),
-        );
+        let wasCheckedOut = false;
 
-        return NoContent();
+        await handle(eventStore, guestStayAccountId, (state) => {
+          const result = checkOut(command, state);
+
+          wasCheckedOut = result.type === 'GuestCheckedOut';
+
+          return result;
+        });
+
+        return wasCheckedOut ? NoContent() : Forbidden();
       }),
     );
 
