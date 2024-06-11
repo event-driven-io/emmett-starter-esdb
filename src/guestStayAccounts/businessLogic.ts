@@ -1,4 +1,4 @@
-import { type Command } from '@event-driven-io/emmett';
+import { IllegalStateError, type Command } from '@event-driven-io/emmett';
 import type {
   ChargeRecorded,
   GuestCheckedIn,
@@ -136,20 +136,21 @@ export const checkOut = (
 };
 
 const assertDoesNotExist = (state: GuestStayAccount): state is Opened => {
-  if (state.status === 'Opened') throw Error(`Guest is already checked-in!`);
+  if (state.status === 'Opened')
+    throw new IllegalStateError(`Guest is already checked-in!`);
 
   if (state.status === 'CheckedOut')
-    throw Error(`Guest account is already checked out`);
+    throw new IllegalStateError(`Guest account is already checked out`);
 
   return true;
 };
 
 const assertIsOpened = (state: GuestStayAccount): state is Opened => {
   if (state.status === 'NotExisting')
-    throw Error(`Guest account doesn't exist!`);
+    throw new IllegalStateError(`Guest account doesn't exist!`);
 
   if (state.status === 'CheckedOut')
-    throw Error(`Guest account is already checked out`);
+    throw new IllegalStateError(`Guest account is already checked out`);
 
   return true;
 };
