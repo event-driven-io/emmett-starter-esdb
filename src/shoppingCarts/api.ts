@@ -33,7 +33,7 @@ import {
 export const handle = CommandHandler(evolve, getInitialState);
 
 export const getShoppingCartId = (clientId: string) =>
-  `shopping_cart:${assertNotEmptyString(clientId)}:current`;
+  `shopping_cart-${assertNotEmptyString(clientId)}:current`;
 
 export const shoppingCartApi =
   (
