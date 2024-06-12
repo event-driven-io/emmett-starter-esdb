@@ -26,13 +26,7 @@ import {
   type RecordCharge,
   type RecordPayment,
 } from './businessLogic';
-import {
-  evolve,
-  initialState,
-  toGuestStayAccountId,
-  type GuestStayAccount,
-  type GuestStayAccountEvent,
-} from './guestStayAccount';
+import { evolve, initialState, toGuestStayAccountId } from './guestStayAccount';
 
 export const handle = CommandHandler(evolve, initialState);
 
@@ -183,10 +177,7 @@ export const guestStayAccountsApi =
       on(async (request: GetShoppingCartRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
 
-        const result = await eventStore.aggregateStream<
-          GuestStayAccount,
-          GuestStayAccountEvent
-        >(guestStayAccountId, {
+        const result = await eventStore.aggregateStream(guestStayAccountId, {
           evolve,
           initialState,
         });
