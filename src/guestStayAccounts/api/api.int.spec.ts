@@ -13,11 +13,11 @@ import {
 import type { TestEventStream } from '@event-driven-io/emmett-expressjs/dist/testing/utils';
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, it } from 'node:test';
-import { guestStayAccountsApi } from './api';
 import {
   toGuestStayAccountId,
   type GuestStayAccountEvent,
-} from './guestStayAccount';
+} from '../guestStayAccount';
+import { guestStayAccountsApi } from './api';
 
 const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
   Promise.resolve(true);

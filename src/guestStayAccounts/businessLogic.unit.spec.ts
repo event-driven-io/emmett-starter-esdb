@@ -26,6 +26,10 @@ void describe('Guest Stay Account', () => {
   const roomId = randomUUID();
   const guestStayAccountId = toGuestStayAccountId(guestId, roomId, now);
   const amount = Math.random() * 100;
+  const chargeId = randomUUID();
+  const nextChargeId = randomUUID();
+  const paymentId = randomUUID();
+  const nextPaymentId = randomUUID();
 
   void describe('When not existing', () => {
     const notExistingAccount: GuestStayAccountEvent[] = [];
@@ -57,6 +61,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordCharge',
           data: {
+            chargeId,
             guestStayAccountId,
             amount,
           },
@@ -71,6 +76,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordPayment',
           data: {
+            paymentId,
             guestStayAccountId,
             amount,
           },
@@ -134,6 +140,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordCharge',
           data: {
+            chargeId,
             guestStayAccountId,
             amount,
           },
@@ -143,6 +150,7 @@ void describe('Guest Stay Account', () => {
           {
             type: 'ChargeRecorded',
             data: {
+              chargeId,
               guestStayAccountId,
               amount,
               recordedAt: now,
@@ -156,6 +164,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordPayment',
           data: {
+            paymentId,
             guestStayAccountId,
             amount,
           },
@@ -165,6 +174,7 @@ void describe('Guest Stay Account', () => {
           {
             type: 'PaymentRecorded',
             data: {
+              paymentId,
               guestStayAccountId,
               amount,
               recordedAt: now,
@@ -206,6 +216,7 @@ void describe('Guest Stay Account', () => {
         {
           type: 'ChargeRecorded',
           data: {
+            chargeId,
             amount,
             guestStayAccountId,
             recordedAt: oldTime,
@@ -218,6 +229,7 @@ void describe('Guest Stay Account', () => {
           .when({
             type: 'RecordCharge',
             data: {
+              chargeId: nextChargeId,
               guestStayAccountId,
               amount,
             },
@@ -227,6 +239,7 @@ void describe('Guest Stay Account', () => {
             {
               type: 'ChargeRecorded',
               data: {
+                chargeId: nextChargeId,
                 guestStayAccountId,
                 amount,
                 recordedAt: now,
@@ -240,6 +253,7 @@ void describe('Guest Stay Account', () => {
           .when({
             type: 'RecordPayment',
             data: {
+              paymentId,
               guestStayAccountId,
               amount,
             },
@@ -249,6 +263,7 @@ void describe('Guest Stay Account', () => {
             {
               type: 'PaymentRecorded',
               data: {
+                paymentId,
                 guestStayAccountId,
                 amount,
                 recordedAt: now,
@@ -292,6 +307,7 @@ void describe('Guest Stay Account', () => {
         {
           type: 'ChargeRecorded',
           data: {
+            chargeId,
             amount,
             guestStayAccountId,
             recordedAt: oldTime,
@@ -300,6 +316,7 @@ void describe('Guest Stay Account', () => {
         {
           type: 'PaymentRecorded',
           data: {
+            paymentId,
             amount,
             guestStayAccountId,
             recordedAt: oldTime,
@@ -312,6 +329,7 @@ void describe('Guest Stay Account', () => {
           .when({
             type: 'RecordCharge',
             data: {
+              chargeId: nextChargeId,
               guestStayAccountId,
               amount,
             },
@@ -321,6 +339,7 @@ void describe('Guest Stay Account', () => {
             {
               type: 'ChargeRecorded',
               data: {
+                chargeId: nextChargeId,
                 guestStayAccountId,
                 amount,
                 recordedAt: now,
@@ -334,6 +353,7 @@ void describe('Guest Stay Account', () => {
           .when({
             type: 'RecordPayment',
             data: {
+              paymentId: nextPaymentId,
               guestStayAccountId,
               amount,
             },
@@ -343,6 +363,7 @@ void describe('Guest Stay Account', () => {
             {
               type: 'PaymentRecorded',
               data: {
+                paymentId: nextPaymentId,
                 guestStayAccountId,
                 amount,
                 recordedAt: now,
@@ -386,6 +407,7 @@ void describe('Guest Stay Account', () => {
       {
         type: 'ChargeRecorded',
         data: {
+          chargeId,
           amount,
           guestStayAccountId,
           recordedAt: oldTime,
@@ -394,6 +416,7 @@ void describe('Guest Stay Account', () => {
       {
         type: 'PaymentRecorded',
         data: {
+          paymentId,
           amount,
           guestStayAccountId,
           recordedAt: oldTime,
@@ -428,6 +451,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordCharge',
           data: {
+            chargeId: nextChargeId,
             guestStayAccountId,
             amount,
           },
@@ -442,6 +466,7 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'RecordPayment',
           data: {
+            paymentId: nextPaymentId,
             guestStayAccountId,
             amount,
           },

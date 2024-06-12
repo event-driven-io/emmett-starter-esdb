@@ -22,6 +22,7 @@ export type CheckIn = Command<
 export type RecordCharge = Command<
   'RecordCharge',
   {
+    chargeId: string;
     guestStayAccountId: string;
     amount: number;
   }
@@ -30,6 +31,7 @@ export type RecordCharge = Command<
 export type RecordPayment = Command<
   'RecordPayment',
   {
+    paymentId: string;
     guestStayAccountId: string;
     amount: number;
   }
@@ -69,7 +71,7 @@ export const checkIn = (
 };
 
 export const recordCharge = (
-  { data: { guestStayAccountId, amount }, metadata }: RecordCharge,
+  { data: { guestStayAccountId, chargeId, amount }, metadata }: RecordCharge,
   state: GuestStayAccount,
 ): ChargeRecorded => {
   assertIsOpened(state);
@@ -77,6 +79,7 @@ export const recordCharge = (
   return {
     type: 'ChargeRecorded',
     data: {
+      chargeId,
       guestStayAccountId,
       amount: amount,
       recordedAt: metadata?.now ?? new Date(),
@@ -85,7 +88,7 @@ export const recordCharge = (
 };
 
 export const recordPayment = (
-  { data: { guestStayAccountId, amount }, metadata }: RecordPayment,
+  { data: { guestStayAccountId, paymentId, amount }, metadata }: RecordPayment,
   state: GuestStayAccount,
 ): PaymentRecorded => {
   assertIsOpened(state);
@@ -93,6 +96,7 @@ export const recordPayment = (
   return {
     type: 'PaymentRecorded',
     data: {
+      paymentId,
       guestStayAccountId,
       amount: amount,
       recordedAt: metadata?.now ?? new Date(),

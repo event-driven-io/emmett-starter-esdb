@@ -17,6 +17,7 @@ export type GuestCheckedIn = Event<
 export type ChargeRecorded = Event<
   'ChargeRecorded',
   {
+    chargeId: string;
     guestStayAccountId: string;
     amount: number;
     recordedAt: Date;
@@ -26,6 +27,7 @@ export type ChargeRecorded = Event<
 export type PaymentRecorded = Event<
   'PaymentRecorded',
   {
+    paymentId: string;
     guestStayAccountId: string;
     amount: number;
     recordedAt: Date;
