@@ -213,13 +213,7 @@ void describe('Guest stay account', () => {
 
       void it('records charge', () =>
         given(unsettledAccount)
-          .when((request) =>
-            request
-              .post(
-                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
-              )
-              .send({ amount }),
-          )
+          .when(recordCharge)
           .then([
             expectResponse(204),
             expectNewEvents(guestStayAccountId, [
@@ -237,13 +231,7 @@ void describe('Guest stay account', () => {
 
       void it('records payment', () =>
         given(unsettledAccount)
-          .when((request) =>
-            request
-              .post(
-                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/payments`,
-              )
-              .send({ amount }),
-          )
+          .when(recordPayment)
           .then([
             expectResponse(204),
             expectNewEvents(guestStayAccountId, [
@@ -261,11 +249,7 @@ void describe('Guest stay account', () => {
 
       void it(`doesn't check out`, () =>
         given(unsettledAccount)
-          .when((request) =>
-            request.delete(
-              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
-            ),
-          )
+          .when(checkOut)
           .then([
             expectError(403),
             expectNewEvents(guestStayAccountId, [
@@ -320,13 +304,7 @@ void describe('Guest stay account', () => {
 
       void it('records charge', () =>
         given(settledAccount)
-          .when((request) =>
-            request
-              .post(
-                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
-              )
-              .send({ amount }),
-          )
+          .when(recordCharge)
           .then([
             expectResponse(204),
             expectNewEvents(guestStayAccountId, [
@@ -344,20 +322,14 @@ void describe('Guest stay account', () => {
 
       void it('records payment', () =>
         given(settledAccount)
-          .when((request) =>
-            request
-              .post(
-                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
-              )
-              .send({ amount }),
-          )
+          .when(recordPayment)
           .then([
             expectResponse(204),
             expectNewEvents(guestStayAccountId, [
               {
-                type: 'ChargeRecorded',
+                type: 'PaymentRecorded',
                 data: {
-                  chargeId: `charge-${transactionId}`,
+                  paymentId: `payment-${transactionId}`,
                   guestStayAccountId,
                   amount,
                   recordedAt: now,
@@ -368,11 +340,7 @@ void describe('Guest stay account', () => {
 
       void it(`checks out`, () =>
         given(settledAccount)
-          .when((request) =>
-            request.delete(
-              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
-            ),
-          )
+          .when(checkOut)
           .then([
             expectResponse(204),
             expectNewEvents(guestStayAccountId, [

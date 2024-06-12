@@ -1,8 +1,12 @@
 /* eslint-disable @typescript-eslint/no-floating-promises */
-import { type EventStore } from '@event-driven-io/emmett';
+import {
+  formatDateToUtcYYYYMMDD,
+  type EventStore,
+} from '@event-driven-io/emmett';
 import { getEventStoreDBEventStore } from '@event-driven-io/emmett-esdb';
 import {
   ApiE2ESpecification,
+  expectError,
   expectResponse,
   getApplication,
   type TestRequest,
@@ -19,14 +23,12 @@ const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
   Promise.resolve(true);
 
 describe('guestStayAccount E2E', () => {
-  // const oldTime = new Date();
   const now = new Date();
-  // const formattedNow = formatDateToUtcYYYYMMDD(now);
+  const formattedNow = formatDateToUtcYYYYMMDD(now);
 
   let guestId: string;
   let roomId: string;
-  // let guestStayAccountId: string;
-  // const amount = Math.random() * 100;
+  const amount = Math.random() * 100;
   const transactionId = randomUUID();
 
   let esdbContainer: StartedEventStoreDBContainer;
@@ -51,51 +53,173 @@ describe('guestStayAccount E2E', () => {
     );
   });
 
-  beforeEach(() => {
-    guestId = randomUUID();
-    roomId = randomUUID();
-    // guestStayAccountId = toGuestStayAccountId(guestId, roomId, now);
-  });
-
   after(() => {
     return esdbContainer.stop();
   });
 
-  describe('When empty', () => {
+  beforeEach(() => {
+    guestId = randomUUID();
+    roomId = randomUUID();
+  });
+
+  const checkIn: TestRequest = (request) =>
+    request.post(`/guests/${guestId}/stays/${roomId}`);
+
+  const recordCharge: TestRequest = (request) =>
+    request
+      .post(
+        `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+      )
+      .send({ amount });
+
+  const recordPayment: TestRequest = (request) =>
+    request
+      .post(
+        `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/payments`,
+      )
+      .send({ amount });
+
+  const checkOut: TestRequest = (request) =>
+    request.delete(
+      `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
+    );
+
+  void describe('When not existing', () => {
     const notExistingAccount: TestRequest[] = [];
 
-    it('should add product item', () => {
-      return given(...notExistingAccount)
-        .when((request) => request.post(`/guests/${guestId}/stays/${roomId}`))
-        .then([expectResponse(201)]);
+    void it('checks in', () =>
+      given(...notExistingAccount)
+        .when(checkIn)
+        .then([expectResponse(201)]));
+
+    void it(`doesn't record charge`, () =>
+      given(...notExistingAccount)
+        .when(recordCharge)
+        .then([
+          expectError(403, {
+            detail: `Guest account doesn't exist!`,
+          }),
+        ]));
+
+    void it(`doesn't record payment`, () =>
+      given(...notExistingAccount)
+        .when(recordPayment)
+        .then([
+          expectError(403, {
+            detail: `Guest account doesn't exist!`,
+          }),
+        ]));
+
+    void it(`doesn't checkout`, () =>
+      given(...notExistingAccount)
+        .when(checkOut)
+        .then([expectError(403)]));
+  });
+
+  void describe('When checked in', () => {
+    const checkedInAccount: TestRequest = checkIn;
+
+    void it(`doesn't check in`, () =>
+      given(checkedInAccount)
+        .when(checkIn)
+        .then([expectError(403, { detail: `Guest is already checked-in!` })]));
+
+    void it('records charge', () =>
+      given(checkedInAccount)
+        .when(recordCharge)
+        .then([expectResponse(204)]));
+
+    void it('records payment', () =>
+      given(checkedInAccount)
+        .when(recordPayment)
+        .then([expectResponse(204)]));
+
+    void it('checks out', () =>
+      given(checkedInAccount)
+        .when(checkOut)
+        .then([expectResponse(204)]));
+
+    void describe('with unsettled balance', () => {
+      const unsettledAccount: TestRequest[] = [checkIn, recordCharge];
+
+      void it('records charge', () =>
+        given(...unsettledAccount)
+          .when((request) =>
+            request
+              .post(
+                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+              )
+              .send({ amount }),
+          )
+          .then([expectResponse(204)]));
+
+      void it('records payment', () =>
+        given(...unsettledAccount)
+          .when(recordPayment)
+          .then([expectResponse(204)]));
+
+      void it(`doesn't check out`, () =>
+        given(...unsettledAccount)
+          .when(checkOut)
+          .then([expectError(403)]));
+    });
+
+    void describe('with settled balance', () => {
+      const settledAccount: TestRequest[] = [
+        checkIn,
+        recordCharge,
+        recordPayment,
+      ];
+
+      void it('records charge', () =>
+        given(...settledAccount)
+          .when(recordCharge)
+          .then([expectResponse(204)]));
+
+      void it('records payment', () =>
+        given(...settledAccount)
+          .when(recordPayment)
+          .then([expectResponse(204)]));
+
+      void it(`checks out`, () =>
+        given(...settledAccount)
+          .when(checkOut)
+          .then([expectResponse(204)]));
     });
   });
 
-  // describe('When empty', () => {
-  //   it('should add product item', () => {
-  //     return given((request) =>
-  //       request
-  //         .post(`/clients/${clientId}/shopping-carts/current/product-items`)
-  //         .send(productItem),
-  //     )
-  //       .when((request) =>
-  //         request.get(`/clients/${clientId}/shopping-carts/current`).send(),
-  //       )
-  //       .then([
-  //         expectResponse(200, {
-  //           body: {
-  //             clientId,
-  //             id: shoppingCartId,
-  //             productItems: [
-  //               {
-  //                 quantity: productItem.quantity,
-  //                 productId: productItem.productId,
-  //               },
-  //             ],
-  //             status: 'Opened',
-  //           },
-  //         }),
-  //       ]);
-  //   });
-  // });
+  void describe('When checked out', () => {
+    const checkedOutAccount: TestRequest[] = [
+      checkIn,
+      recordCharge,
+      recordPayment,
+      checkOut,
+    ];
+
+    void it(`doesn't check in`, () =>
+      given(...checkedOutAccount)
+        .when(checkIn)
+        .then([
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ]));
+
+    void it(`doesn't record charge`, () =>
+      given(...checkedOutAccount)
+        .when(recordCharge)
+        .then([
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ]));
+
+    void it(`doesn't record payment`, () =>
+      given(...checkedOutAccount)
+        .when(recordPayment)
+        .then([
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ]));
+
+    void it(`doesn't checkout`, () =>
+      given(...checkedOutAccount)
+        .when(checkOut)
+        .then([expectError(403, { detail: `NotOpened` })]));
+  });
 });
