@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { decide } from './businessLogic';
 import {
   evolve,
-  getInitialState,
+  initialState,
   toGuestStayAccountId,
   type GuestStayAccountEvent,
 } from './guestStayAccount';
@@ -15,7 +15,7 @@ import {
 const given = DeciderSpecification.for({
   decide,
   evolve,
-  initialState: getInitialState,
+  initialState,
 });
 
 void describe('Guest Stay Account', () => {
@@ -29,12 +29,12 @@ void describe('Guest Stay Account', () => {
 
   void describe('When not existing', () => {
     const notExistingAccount: GuestStayAccountEvent[] = [];
+
     void it('checks in', () =>
       given(notExistingAccount)
         .when({
           type: 'CheckIn',
           data: {
-            guestStayAccountId,
             guestId,
             roomId,
           },
@@ -120,7 +120,6 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'CheckIn',
           data: {
-            guestStayAccountId,
             guestId,
             roomId,
           },
@@ -415,7 +414,6 @@ void describe('Guest Stay Account', () => {
         .when({
           type: 'CheckIn',
           data: {
-            guestStayAccountId,
             guestId,
             roomId,
           },

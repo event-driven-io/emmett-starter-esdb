@@ -1,7 +1,9 @@
 import {
+  CommandHandler,
   assertNotEmptyString,
   assertPositiveNumber,
-  CommandHandler,
+  formatDateToUtcYYYYMMDD,
+  parseDateFromUtcYYYYMMDD,
   type EventStore,
 } from '@event-driven-io/emmett';
 import {
@@ -15,10 +17,6 @@ import {
 } from '@event-driven-io/emmett-expressjs';
 import { type Request, type Router } from 'express';
 import {
-  formatDateToUtcYYYYMMDD,
-  parseDateFromUtcYYYYMMDD,
-} from '../core/dates';
-import {
   checkIn,
   checkOut,
   recordCharge,
@@ -30,11 +28,13 @@ import {
 } from './businessLogic';
 import {
   evolve,
-  getInitialState,
+  initialState,
   toGuestStayAccountId,
+  type GuestStayAccount,
+  type GuestStayAccountEvent,
 } from './guestStayAccount';
 
-export const handle = CommandHandler(evolve, getInitialState);
+export const handle = CommandHandler(evolve, initialState);
 
 type CheckInRequest = Request<Partial<{ guestId: string; roomId: string }>>;
 
@@ -89,7 +89,6 @@ export const guestStayAccountsApi =
         const command: CheckIn = {
           type: 'CheckIn',
           data: {
-            guestStayAccountId,
             guestId,
             roomId,
           },
@@ -101,8 +100,7 @@ export const guestStayAccountsApi =
         );
 
         return Created({
-          createdId: guestStayAccountId,
-          urlPrefix: `/guests/${guestId}/stays/${roomId}/periods/${formatDateToUtcYYYYMMDD(now)}`,
+          url: `/guests/${guestId}/stays/${roomId}/periods/${formatDateToUtcYYYYMMDD(now)}`,
         });
       }),
     );
@@ -185,9 +183,12 @@ export const guestStayAccountsApi =
       on(async (request: GetShoppingCartRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
 
-        const result = await eventStore.aggregateStream(guestStayAccountId, {
+        const result = await eventStore.aggregateStream<
+          GuestStayAccount,
+          GuestStayAccountEvent
+        >(guestStayAccountId, {
           evolve,
-          getInitialState,
+          initialState,
         });
 
         if (result === null) return NotFound();

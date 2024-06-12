@@ -1,4 +1,5 @@
 import {
+  formatDateToUtcYYYYMMDD,
   getInMemoryEventStore,
   type EventStore,
 } from '@event-driven-io/emmett';
@@ -12,7 +13,6 @@ import {
 import type { TestEventStream } from '@event-driven-io/emmett-expressjs/dist/testing/utils';
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, it } from 'node:test';
-import { formatDateToUtcYYYYMMDD } from '../core/dates';
 import { guestStayAccountsApi } from './api';
 import {
   toGuestStayAccountId,
@@ -71,9 +71,6 @@ void describe('Guest stay account', () => {
         .then(
           expectError(403, {
             detail: `Guest account doesn't exist!`,
-            status: 403,
-            title: 'Forbidden',
-            type: 'about:blank',
           }),
         ));
 
@@ -89,9 +86,6 @@ void describe('Guest stay account', () => {
         .then(
           expectError(403, {
             detail: `Guest account doesn't exist!`,
-            status: 403,
-            title: 'Forbidden',
-            type: 'about:blank',
           }),
         ));
 
