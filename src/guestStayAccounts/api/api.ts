@@ -16,7 +16,6 @@ import {
   type WebApiSetup,
 } from '@event-driven-io/emmett-expressjs';
 import { type Request, type Router } from 'express';
-import { randomUUID } from 'node:crypto';
 import {
   checkIn,
   checkOut,
@@ -70,6 +69,7 @@ export const guestStayAccountsApi =
       roomId: string,
       day: Date,
     ) => Promise<boolean>,
+    generateId: (prefix: string) => string,
     getCurrentTime: () => Date,
   ): WebApiSetup =>
   (router: Router) => {
@@ -110,12 +110,11 @@ export const guestStayAccountsApi =
       '/guests/:guestId/stays/:roomId/periods/:checkInDate/charges',
       on(async (request: RecordChargeRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
-        const chargeId = randomUUID();
 
         const command: RecordCharge = {
           type: 'RecordCharge',
           data: {
-            chargeId,
+            chargeId: generateId('charge'),
             guestStayAccountId,
             amount: assertPositiveNumber(Number(request.body.amount)),
           },
@@ -135,12 +134,11 @@ export const guestStayAccountsApi =
       '/guests/:guestId/stays/:roomId/periods/:checkInDate/payments',
       on(async (request: RecordPaymentRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
-        const paymentId = randomUUID();
 
         const command: RecordPayment = {
           type: 'RecordPayment',
           data: {
-            paymentId,
+            paymentId: generateId('payment'),
             guestStayAccountId,
             amount: assertPositiveNumber(Number(request.body.amount)),
           },
@@ -167,17 +165,17 @@ export const guestStayAccountsApi =
           metadata: { now: getCurrentTime() },
         };
 
-        let wasCheckedOut = false;
+        const {
+          newEvents: [event],
+        } = await handle(eventStore, guestStayAccountId, (state) =>
+          checkOut(command, state),
+        );
 
-        await handle(eventStore, guestStayAccountId, (state) => {
-          const result = checkOut(command, state);
-
-          wasCheckedOut = result.type === 'GuestCheckedOut';
-
-          return result;
-        });
-
-        return wasCheckedOut ? NoContent() : Forbidden();
+        return event.type !== 'GuestCheckoutFailed'
+          ? NoContent()
+          : Forbidden({
+              problemDetails: event.data.reason,
+            });
       }),
     );
 

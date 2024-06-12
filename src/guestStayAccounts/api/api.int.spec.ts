@@ -5,10 +5,12 @@ import {
 } from '@event-driven-io/emmett';
 import {
   ApiSpecification,
+  existingStream,
   expectError,
   expectNewEvents,
   expectResponse,
   getApplication,
+  type TestRequest,
 } from '@event-driven-io/emmett-expressjs';
 import type { TestEventStream } from '@event-driven-io/emmett-expressjs/dist/testing/utils';
 import { randomUUID } from 'node:crypto';
@@ -23,7 +25,7 @@ const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
   Promise.resolve(true);
 
 void describe('Guest stay account', () => {
-  //const oldTime = new Date();
+  const oldTime = new Date();
   const now = new Date();
   const formattedNow = formatDateToUtcYYYYMMDD(now);
 
@@ -31,6 +33,7 @@ void describe('Guest stay account', () => {
   let roomId: string;
   let guestStayAccountId: string;
   const amount = Math.random() * 100;
+  const transactionId = randomUUID();
 
   beforeEach(() => {
     guestId = randomUUID();
@@ -38,12 +41,34 @@ void describe('Guest stay account', () => {
     guestStayAccountId = toGuestStayAccountId(guestId, roomId, now);
   });
 
+  const checkIn: TestRequest = (request) =>
+    request.post(`/guests/${guestId}/stays/${roomId}`);
+
+  const recordCharge: TestRequest = (request) =>
+    request
+      .post(
+        `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+      )
+      .send({ amount });
+
+  const recordPayment: TestRequest = (request) =>
+    request
+      .post(
+        `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/payments`,
+      )
+      .send({ amount });
+
+  const checkOut: TestRequest = (request) =>
+    request.delete(
+      `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
+    );
+
   void describe('When not existing', () => {
     const notExistingAccount: TestEventStream<GuestStayAccountEvent>[] = [];
 
     void it('checks in', () =>
       given(...notExistingAccount)
-        .when((request) => request.post(`/guests/${guestId}/stays/${roomId}`))
+        .when(checkIn)
         .then([
           expectResponse(201),
           expectNewEvents(guestStayAccountId, [
@@ -61,13 +86,7 @@ void describe('Guest stay account', () => {
 
     void it(`doesn't record charge`, () =>
       given(...notExistingAccount)
-        .when((request) =>
-          request
-            .post(
-              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
-            )
-            .send({ amount }),
-        )
+        .when(recordCharge)
         .then(
           expectError(403, {
             detail: `Guest account doesn't exist!`,
@@ -76,13 +95,7 @@ void describe('Guest stay account', () => {
 
     void it(`doesn't record payment`, () =>
       given(...notExistingAccount)
-        .when((request) =>
-          request
-            .post(
-              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/payments`,
-            )
-            .send({ amount }),
-        )
+        .when(recordPayment)
         .then(
           expectError(403, {
             detail: `Guest account doesn't exist!`,
@@ -91,85 +104,387 @@ void describe('Guest stay account', () => {
 
     void it(`doesn't checkout`, () =>
       given(...notExistingAccount)
-        .when((request) =>
-          request.delete(
-            `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
-          ),
-        )
+        .when(checkOut)
         .then(expectError(403)));
   });
 
-  // void describe('When opened with product item', () => {
-  //   void it('should confirm', () => {
-  //     return given(
-  //       existingStream(guestStayAccountId, [
-  //         {
-  //           type: 'ProductItemAddedToShoppingCart',
-  //           data: {
-  //             guestStayAccountId,
-  //             productItem,
-  //             addedAt: oldTime,
-  //           },
-  //         },
-  //       ]),
-  //     )
-  //       .when((request) =>
-  //         request.post(`/clients/${clientId}/shopping-carts/current/confirm`),
-  //       )
-  //       .then([
-  //         expectResponse(204),
-  //         expectNewEvents(guestStayAccountId, [
-  //           {
-  //             type: 'ShoppingCartConfirmed',
-  //             data: {
-  //               guestStayAccountId,
-  //               confirmedAt: now,
-  //             },
-  //           },
-  //         ]),
-  //       ]);
-  //   });
-  // });
+  void describe('When checked in', () => {
+    let checkedInAccount: TestEventStream<GuestStayAccountEvent>;
 
-  // void describe('When confirmed', () => {
-  //   void it('should not add products', () => {
-  //     return given(
-  //       existingStream(guestStayAccountId, [
-  //         {
-  //           type: 'ProductItemAddedToShoppingCart',
-  //           data: {
-  //             guestStayAccountId,
-  //             productItem,
-  //             addedAt: oldTime,
-  //           },
-  //         },
-  //         {
-  //           type: 'ShoppingCartConfirmed',
-  //           data: { guestStayAccountId, confirmedAt: oldTime },
-  //         },
-  //       ]),
-  //     )
-  //       .when((request) =>
-  //         request
-  //           .post(`/clients/${clientId}/shopping-carts/current/product-items`)
-  //           .send(productItem),
-  //       )
-  //       .then(
-  //         expectError(403, {
-  //           detail: 'Shopping Cart already closed',
-  //           status: 403,
-  //           title: 'Forbidden',
-  //           type: 'about:blank',
-  //         }),
-  //       );
-  //   });
-  // });
+    beforeEach(
+      () =>
+        (checkedInAccount = existingStream(guestStayAccountId, [
+          {
+            type: 'GuestCheckedIn',
+            data: {
+              guestStayAccountId,
+              guestId,
+              roomId,
+              checkedInAt: oldTime,
+            },
+          },
+        ])),
+    );
+
+    void it(`doesn't check in`, () =>
+      given(checkedInAccount)
+        .when(checkIn)
+        .then(expectError(403, { detail: `Guest is already checked-in!` })));
+
+    void it('records charge', () =>
+      given(checkedInAccount)
+        .when(recordCharge)
+        .then([
+          expectResponse(204),
+          expectNewEvents(guestStayAccountId, [
+            {
+              type: 'ChargeRecorded',
+              data: {
+                chargeId: `charge-${transactionId}`,
+                guestStayAccountId,
+                amount,
+                recordedAt: now,
+              },
+            },
+          ]),
+        ]));
+
+    void it('records payment', () =>
+      given(checkedInAccount)
+        .when(recordPayment)
+        .then([
+          expectResponse(204),
+          expectNewEvents(guestStayAccountId, [
+            {
+              type: 'PaymentRecorded',
+              data: {
+                paymentId: `payment-${transactionId}`,
+                guestStayAccountId,
+                amount,
+                recordedAt: now,
+              },
+            },
+          ]),
+        ]));
+
+    void it('checks out', () =>
+      given(checkedInAccount)
+        .when(checkOut)
+        .then([
+          expectResponse(204),
+          expectNewEvents(guestStayAccountId, [
+            {
+              type: 'GuestCheckedOut',
+              data: {
+                guestStayAccountId,
+                checkedOutAt: now,
+                groupCheckoutId: undefined,
+              },
+            },
+          ]),
+        ]));
+
+    void describe('with unsettled balance', () => {
+      let unsettledAccount: TestEventStream<GuestStayAccountEvent>;
+
+      beforeEach(
+        () =>
+          (unsettledAccount = existingStream(guestStayAccountId, [
+            {
+              type: 'GuestCheckedIn',
+              data: {
+                guestStayAccountId,
+                guestId,
+                roomId,
+                checkedInAt: oldTime,
+              },
+            },
+            {
+              type: 'ChargeRecorded',
+              data: {
+                chargeId: `charge-${randomUUID()}`,
+                amount,
+                guestStayAccountId,
+                recordedAt: oldTime,
+              },
+            },
+          ])),
+      );
+
+      void it('records charge', () =>
+        given(unsettledAccount)
+          .when((request) =>
+            request
+              .post(
+                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+              )
+              .send({ amount }),
+          )
+          .then([
+            expectResponse(204),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'ChargeRecorded',
+                data: {
+                  chargeId: `charge-${transactionId}`,
+                  guestStayAccountId,
+                  amount,
+                  recordedAt: now,
+                },
+              },
+            ]),
+          ]));
+
+      void it('records payment', () =>
+        given(unsettledAccount)
+          .when((request) =>
+            request
+              .post(
+                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/payments`,
+              )
+              .send({ amount }),
+          )
+          .then([
+            expectResponse(204),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'PaymentRecorded',
+                data: {
+                  paymentId: `payment-${transactionId}`,
+                  guestStayAccountId,
+                  amount,
+                  recordedAt: now,
+                },
+              },
+            ]),
+          ]));
+
+      void it(`doesn't check out`, () =>
+        given(unsettledAccount)
+          .when((request) =>
+            request.delete(
+              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
+            ),
+          )
+          .then([
+            expectError(403),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'GuestCheckoutFailed',
+                data: {
+                  guestStayAccountId,
+                  reason: 'BalanceNotSettled',
+                  groupCheckoutId: undefined,
+                  failedAt: now,
+                },
+              },
+            ]),
+          ]));
+    });
+
+    void describe('with settled balance', () => {
+      let settledAccount: TestEventStream<GuestStayAccountEvent>;
+
+      beforeEach(
+        () =>
+          (settledAccount = existingStream(guestStayAccountId, [
+            {
+              type: 'GuestCheckedIn',
+              data: {
+                guestStayAccountId,
+                guestId,
+                roomId,
+                checkedInAt: oldTime,
+              },
+            },
+            {
+              type: 'ChargeRecorded',
+              data: {
+                chargeId: `charge-${randomUUID()}`,
+                amount,
+                guestStayAccountId,
+                recordedAt: oldTime,
+              },
+            },
+            {
+              type: 'PaymentRecorded',
+              data: {
+                paymentId: `payment-${randomUUID()}`,
+                amount,
+                guestStayAccountId,
+                recordedAt: oldTime,
+              },
+            },
+          ])),
+      );
+
+      void it('records charge', () =>
+        given(settledAccount)
+          .when((request) =>
+            request
+              .post(
+                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+              )
+              .send({ amount }),
+          )
+          .then([
+            expectResponse(204),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'ChargeRecorded',
+                data: {
+                  chargeId: `charge-${transactionId}`,
+                  guestStayAccountId,
+                  amount,
+                  recordedAt: now,
+                },
+              },
+            ]),
+          ]));
+
+      void it('records payment', () =>
+        given(settledAccount)
+          .when((request) =>
+            request
+              .post(
+                `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}/charges`,
+              )
+              .send({ amount }),
+          )
+          .then([
+            expectResponse(204),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'ChargeRecorded',
+                data: {
+                  chargeId: `charge-${transactionId}`,
+                  guestStayAccountId,
+                  amount,
+                  recordedAt: now,
+                },
+              },
+            ]),
+          ]));
+
+      void it(`checks out`, () =>
+        given(settledAccount)
+          .when((request) =>
+            request.delete(
+              `/guests/${guestId}/stays/${roomId}/periods/${formattedNow}`,
+            ),
+          )
+          .then([
+            expectResponse(204),
+            expectNewEvents(guestStayAccountId, [
+              {
+                type: 'GuestCheckedOut',
+                data: {
+                  guestStayAccountId,
+                  checkedOutAt: now,
+                  groupCheckoutId: undefined,
+                },
+              },
+            ]),
+          ]));
+    });
+  });
+
+  void describe('When checked out', () => {
+    let checkedOutAccount: TestEventStream<GuestStayAccountEvent>;
+
+    beforeEach(
+      () =>
+        (checkedOutAccount = existingStream(guestStayAccountId, [
+          {
+            type: 'GuestCheckedIn',
+            data: {
+              guestStayAccountId,
+              guestId,
+              roomId,
+              checkedInAt: oldTime,
+            },
+          },
+          {
+            type: 'ChargeRecorded',
+            data: {
+              chargeId: `charge-${randomUUID()}`,
+              amount,
+              guestStayAccountId,
+              recordedAt: oldTime,
+            },
+          },
+          {
+            type: 'PaymentRecorded',
+            data: {
+              paymentId: `payment-${randomUUID()}`,
+              amount,
+              guestStayAccountId,
+              recordedAt: oldTime,
+            },
+          },
+          {
+            type: 'GuestCheckedOut',
+            data: {
+              guestStayAccountId,
+              groupCheckoutId: undefined,
+              checkedOutAt: now,
+            },
+          },
+        ])),
+    );
+
+    void it(`doesn't check in`, () =>
+      given(checkedOutAccount)
+        .when(checkIn)
+        .then(
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ));
+
+    void it(`doesn't record charge`, () =>
+      given(checkedOutAccount)
+        .when(recordCharge)
+        .then(
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ));
+
+    void it(`doesn't record payment`, () =>
+      given(checkedOutAccount)
+        .when(recordPayment)
+        .then(
+          expectError(403, { detail: `Guest account is already checked out` }),
+        ));
+
+    void it(`doesn't checkout`, () =>
+      given(checkedOutAccount)
+        .when(checkOut)
+        .then([
+          expectError(403, { detail: `NotOpened` }),
+          expectNewEvents(guestStayAccountId, [
+            {
+              type: 'GuestCheckoutFailed',
+              data: {
+                guestStayAccountId,
+                groupCheckoutId: undefined,
+                reason: 'NotOpened',
+                failedAt: now,
+              },
+            },
+          ]),
+        ]));
+  });
 
   const given = ApiSpecification.for<GuestStayAccountEvent>(
     (): EventStore => getInMemoryEventStore(),
     (eventStore: EventStore) =>
       getApplication({
-        apis: [guestStayAccountsApi(eventStore, doesGuestStayExist, () => now)],
+        apis: [
+          guestStayAccountsApi(
+            eventStore,
+            doesGuestStayExist,
+            (prefix) => `${prefix}-${transactionId}`,
+            () => now,
+          ),
+        ],
       }),
   );
 });
