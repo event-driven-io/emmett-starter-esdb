@@ -50,7 +50,6 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v4
         with:
-          context: './samples/webApi/expressjs-with-esdb'
           push: false
           tags: emmett.esdb.sample:latest
 
