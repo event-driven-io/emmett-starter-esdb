@@ -31,6 +31,7 @@ export type PaymentRecorded = Event<
     recordedAt: Date;
   }
 >;
+
 export type GuestCheckedOut = Event<
   'GuestCheckedOut',
   {
@@ -69,11 +70,9 @@ export type CheckedOut = { status: 'CheckedOut' };
 
 export type GuestStayAccount = NotExisting | Opened | CheckedOut;
 
-export const getInitialState = (): GuestStayAccount => {
-  return {
-    status: 'NotExisting',
-  };
-};
+export const initialState = (): GuestStayAccount => ({
+  status: 'NotExisting',
+});
 
 export const toGuestStayAccountId = (
   guestId: string,
@@ -91,32 +90,28 @@ export const evolve = (
 ): GuestStayAccount => {
   switch (type) {
     case 'GuestCheckedIn': {
-      if (state.status !== 'NotExisting') return state;
-
-      return { status: 'Opened', balance: 0 };
+      return state.status === 'NotExisting'
+        ? { status: 'Opened', balance: 0 }
+        : state;
     }
     case 'ChargeRecorded': {
-      if (state.status !== 'Opened') return state;
-
-      return {
-        ...state,
-        balance: state.balance - event.amount,
-      };
+      return state.status === 'Opened'
+        ? {
+            ...state,
+            balance: state.balance - event.amount,
+          }
+        : state;
     }
     case 'PaymentRecorded': {
-      if (state.status !== 'Opened') return state;
-
-      return {
-        ...state,
-        balance: state.balance + event.amount,
-      };
+      return state.status === 'Opened'
+        ? {
+            ...state,
+            balance: state.balance + event.amount,
+          }
+        : state;
     }
     case 'GuestCheckedOut': {
-      if (state.status !== 'Opened') return state;
-
-      return {
-        status: 'CheckedOut',
-      };
+      return state.status === 'Opened' ? { status: 'CheckedOut' } : state;
     }
     case 'GuestCheckoutFailed': {
       return state;

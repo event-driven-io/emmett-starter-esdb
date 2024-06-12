@@ -1,23 +1,24 @@
 import { IllegalStateError, type Command } from '@event-driven-io/emmett';
-import type {
-  ChargeRecorded,
-  GuestCheckedIn,
-  GuestCheckedOut,
-  GuestCheckoutFailed,
-  GuestStayAccount,
-  GuestStayAccountEvent,
-  Opened,
-  PaymentRecorded,
+import {
+  toGuestStayAccountId,
+  type ChargeRecorded,
+  type GuestCheckedIn,
+  type GuestCheckedOut,
+  type GuestCheckoutFailed,
+  type GuestStayAccount,
+  type GuestStayAccountEvent,
+  type Opened,
+  type PaymentRecorded,
 } from './guestStayAccount';
 
 export type CheckIn = Command<
   'CheckIn',
   {
-    guestStayAccountId: string;
     guestId: string;
     roomId: string;
   }
 >;
+
 export type RecordCharge = Command<
   'RecordCharge',
   {
@@ -25,6 +26,7 @@ export type RecordCharge = Command<
     amount: number;
   }
 >;
+
 export type RecordPayment = Command<
   'RecordPayment',
   {
@@ -32,6 +34,7 @@ export type RecordPayment = Command<
     amount: number;
   }
 >;
+
 export type CheckOut = Command<
   'CheckOut',
   {
@@ -47,18 +50,20 @@ export type GuestStayCommand =
   | CheckOut;
 
 export const checkIn = (
-  { data: { guestStayAccountId, guestId, roomId }, metadata }: CheckIn,
+  { data: { guestId, roomId }, metadata }: CheckIn,
   state: GuestStayAccount,
 ): GuestCheckedIn => {
   assertDoesNotExist(state);
+
+  const now = metadata?.now ?? new Date();
 
   return {
     type: 'GuestCheckedIn',
     data: {
       guestId,
       roomId,
-      guestStayAccountId,
-      checkedInAt: metadata?.now ?? new Date(),
+      guestStayAccountId: toGuestStayAccountId(guestId, roomId, now),
+      checkedInAt: now,
     },
   };
 };
@@ -114,45 +119,24 @@ export const checkOut = (
 
   const isSettled = state.balance === 0;
 
-  if (!isSettled)
-    return {
-      type: 'GuestCheckoutFailed',
-      data: {
-        guestStayAccountId,
-        groupCheckoutId,
-        reason: 'BalanceNotSettled',
-        failedAt: now,
-      },
-    };
-
-  return {
-    type: 'GuestCheckedOut',
-    data: {
-      guestStayAccountId,
-      groupCheckoutId,
-      checkedOutAt: now,
-    },
-  };
-};
-
-const assertDoesNotExist = (state: GuestStayAccount): state is Opened => {
-  if (state.status === 'Opened')
-    throw new IllegalStateError(`Guest is already checked-in!`);
-
-  if (state.status === 'CheckedOut')
-    throw new IllegalStateError(`Guest account is already checked out`);
-
-  return true;
-};
-
-const assertIsOpened = (state: GuestStayAccount): state is Opened => {
-  if (state.status === 'NotExisting')
-    throw new IllegalStateError(`Guest account doesn't exist!`);
-
-  if (state.status === 'CheckedOut')
-    throw new IllegalStateError(`Guest account is already checked out`);
-
-  return true;
+  return isSettled
+    ? {
+        type: 'GuestCheckedOut',
+        data: {
+          guestStayAccountId,
+          groupCheckoutId,
+          checkedOutAt: now,
+        },
+      }
+    : {
+        type: 'GuestCheckoutFailed',
+        data: {
+          guestStayAccountId,
+          groupCheckoutId,
+          reason: 'BalanceNotSettled',
+          failedAt: now,
+        },
+      };
 };
 
 export const decide = (
@@ -175,4 +159,24 @@ export const decide = (
       throw new Error(`Unknown command type`);
     }
   }
+};
+
+const assertDoesNotExist = (state: GuestStayAccount): state is Opened => {
+  if (state.status === 'Opened')
+    throw new IllegalStateError(`Guest is already checked-in!`);
+
+  if (state.status === 'CheckedOut')
+    throw new IllegalStateError(`Guest account is already checked out`);
+
+  return true;
+};
+
+const assertIsOpened = (state: GuestStayAccount): state is Opened => {
+  if (state.status === 'NotExisting')
+    throw new IllegalStateError(`Guest account doesn't exist!`);
+
+  if (state.status === 'CheckedOut')
+    throw new IllegalStateError(`Guest account is already checked out`);
+
+  return true;
 };
