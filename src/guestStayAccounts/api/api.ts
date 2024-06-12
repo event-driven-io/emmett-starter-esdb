@@ -16,6 +16,7 @@ import {
   type WebApiSetup,
 } from '@event-driven-io/emmett-expressjs';
 import { type Request, type Router } from 'express';
+import { randomUUID } from 'node:crypto';
 import {
   checkIn,
   checkOut,
@@ -25,8 +26,12 @@ import {
   type CheckOut,
   type RecordCharge,
   type RecordPayment,
-} from './businessLogic';
-import { evolve, initialState, toGuestStayAccountId } from './guestStayAccount';
+} from '../businessLogic';
+import {
+  evolve,
+  initialState,
+  toGuestStayAccountId,
+} from '../guestStayAccount';
 
 export const handle = CommandHandler(evolve, initialState);
 
@@ -104,10 +109,12 @@ export const guestStayAccountsApi =
       '/guests/:guestId/stays/:roomId/periods/:checkInDate/charges',
       on(async (request: RecordChargeRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
+        const chargeId = randomUUID();
 
         const command: RecordCharge = {
           type: 'RecordCharge',
           data: {
+            chargeId,
             guestStayAccountId,
             amount: assertPositiveNumber(Number(request.body.amount)),
           },
@@ -127,10 +134,12 @@ export const guestStayAccountsApi =
       '/guests/:guestId/stays/:roomId/periods/:checkInDate/payments',
       on(async (request: RecordPaymentRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
+        const paymentId = randomUUID();
 
         const command: RecordPayment = {
           type: 'RecordPayment',
           data: {
+            paymentId,
             guestStayAccountId,
             amount: assertPositiveNumber(Number(request.body.amount)),
           },

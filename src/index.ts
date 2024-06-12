@@ -2,7 +2,7 @@ import { getEventStoreDBEventStore } from '@event-driven-io/emmett-esdb';
 import { getApplication, startAPI } from '@event-driven-io/emmett-expressjs';
 import { EventStoreDBClient } from '@eventstore/db-client';
 import type { Application } from 'express';
-import { guestStayAccountsApi } from './guestStayAccounts/api';
+import { guestStayAccountsApi } from './guestStayAccounts/api/api';
 
 const eventStoreDBClient = EventStoreDBClient.connectionString(
   process.env.ESDB_CONNECTION_STRING ?? `esdb://localhost:2113?tls=false`,
