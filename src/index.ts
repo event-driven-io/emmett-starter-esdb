@@ -1,6 +1,7 @@
 import { getEventStoreDBEventStore } from '@event-driven-io/emmett-esdb';
 import { getApplication, startAPI } from '@event-driven-io/emmett-expressjs';
 import { EventStoreDBClient } from '@eventstore/db-client';
+import { randomUUID } from 'crypto';
 import type { Application } from 'express';
 import { guestStayAccountsApi } from './guestStayAccounts/api/api';
 
@@ -15,6 +16,7 @@ const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
 const shoppingCarts = guestStayAccountsApi(
   eventStore,
   doesGuestStayExist,
+  (prefix) => `${prefix}-${randomUUID()}`,
   () => new Date(),
 );
 

@@ -5,6 +5,7 @@ import {
   ApiE2ESpecification,
   expectResponse,
   getApplication,
+  type TestRequest,
 } from '@event-driven-io/emmett-expressjs';
 import {
   EventStoreDBContainer,
@@ -26,6 +27,7 @@ describe('guestStayAccount E2E', () => {
   let roomId: string;
   // let guestStayAccountId: string;
   // const amount = Math.random() * 100;
+  const transactionId = randomUUID();
 
   let esdbContainer: StartedEventStoreDBContainer;
   let given: ApiE2ESpecification;
@@ -38,7 +40,12 @@ describe('guestStayAccount E2E', () => {
       (eventStore: EventStore) =>
         getApplication({
           apis: [
-            guestStayAccountsApi(eventStore, doesGuestStayExist, () => now),
+            guestStayAccountsApi(
+              eventStore,
+              doesGuestStayExist,
+              (prefix) => `${prefix}-${transactionId}`,
+              () => now,
+            ),
           ],
         }),
     );
@@ -55,8 +62,10 @@ describe('guestStayAccount E2E', () => {
   });
 
   describe('When empty', () => {
+    const notExistingAccount: TestRequest[] = [];
+
     it('should add product item', () => {
-      return given()
+      return given(...notExistingAccount)
         .when((request) => request.post(`/guests/${guestId}/stays/${roomId}`))
         .then([expectResponse(201)]);
     });

@@ -1,4 +1,4 @@
-import { type Event } from '@event-driven-io/emmett';
+import { formatDateToUtcYYYYMMDD, type Event } from '@event-driven-io/emmett';
 
 ////////////////////////////////////////////
 ////////// EVENTS
@@ -80,7 +80,7 @@ export const toGuestStayAccountId = (
   guestId: string,
   roomId: string,
   date: Date,
-) => `guest_stay_account-${guestId}:${roomId}:${date.toLocaleDateString()}`;
+) => `guest_stay_account-${guestId}:${roomId}:${formatDateToUtcYYYYMMDD(date)}`;
 
 ////////////////////////////////////////////
 ////////// Evolve
