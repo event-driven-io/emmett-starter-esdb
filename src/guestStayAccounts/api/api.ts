@@ -32,6 +32,7 @@ import {
   initialState,
   toGuestStayAccountId,
 } from '../guestStayAccount';
+import { getGuestStayDetails } from '../guestStayDetails';
 
 export const handle = CommandHandler(evolve, initialState);
 
@@ -186,10 +187,10 @@ export const guestStayAccountsApi =
       on(async (request: GetShoppingCartRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
 
-        const result = await eventStore.aggregateStream(guestStayAccountId, {
-          evolve,
-          initialState,
-        });
+        const result = await getGuestStayDetails(
+          eventStore,
+          guestStayAccountId,
+        );
 
         if (result === null) return NotFound();
 
