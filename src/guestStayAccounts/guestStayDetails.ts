@@ -1,3 +1,4 @@
+import { type EventStore } from '@event-driven-io/emmett';
 import type { GuestStayAccountEvent } from './guestStayAccount';
 
 export type NotExisting = { status: 'NotExisting' };
@@ -83,3 +84,12 @@ export const evolve = (
     }
   }
 };
+
+export const getGuestStayDetails = (
+  eventStore: EventStore,
+  guestStayAccountId: string,
+) =>
+  eventStore.aggregateStream(guestStayAccountId, {
+    evolve,
+    initialState,
+  });
