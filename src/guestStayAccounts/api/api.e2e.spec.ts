@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import {
   formatDateToUtcYYYYMMDD,
   type EventStore,
@@ -22,7 +21,7 @@ import { guestStayAccountsApi } from './api';
 const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
   Promise.resolve(true);
 
-describe('guestStayAccount E2E', () => {
+void describe('guestStayAccount E2E', () => {
   const now = new Date();
   const formattedNow = formatDateToUtcYYYYMMDD(now);
 
