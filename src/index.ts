@@ -13,7 +13,7 @@ const eventStore = getEventStoreDBEventStore(eventStoreDBClient);
 const doesGuestStayExist = (_guestId: string, _roomId: string, _day: Date) =>
   Promise.resolve(true);
 
-const shoppingCarts = guestStayAccountsApi(
+const guestStayAccounts = guestStayAccountsApi(
   eventStore,
   doesGuestStayExist,
   (prefix) => `${prefix}-${randomUUID()}`,
@@ -21,7 +21,7 @@ const shoppingCarts = guestStayAccountsApi(
 );
 
 const application: Application = getApplication({
-  apis: [shoppingCarts],
+  apis: [guestStayAccounts],
 });
 
 startAPI(application);

@@ -2,12 +2,12 @@ import { IllegalStateError, type Command } from '@event-driven-io/emmett';
 import {
   toGuestStayAccountId,
   type ChargeRecorded,
+  type CheckedIn,
   type GuestCheckedIn,
   type GuestCheckedOut,
   type GuestCheckoutFailed,
   type GuestStayAccount,
   type GuestStayAccountEvent,
-  type Opened,
   type PaymentRecorded,
 } from './guestStayAccount';
 
@@ -74,7 +74,7 @@ export const recordCharge = (
   { data: { guestStayAccountId, chargeId, amount }, metadata }: RecordCharge,
   state: GuestStayAccount,
 ): ChargeRecorded => {
-  assertIsOpened(state);
+  assertIsCheckedIn(state);
 
   return {
     type: 'ChargeRecorded',
@@ -91,7 +91,7 @@ export const recordPayment = (
   { data: { guestStayAccountId, paymentId, amount }, metadata }: RecordPayment,
   state: GuestStayAccount,
 ): PaymentRecorded => {
-  assertIsOpened(state);
+  assertIsCheckedIn(state);
 
   return {
     type: 'PaymentRecorded',
@@ -110,13 +110,13 @@ export const checkOut = (
 ): GuestCheckedOut | GuestCheckoutFailed => {
   const now = metadata?.now ?? new Date();
 
-  if (state.status !== 'Opened')
+  if (state.status !== 'CheckedIn')
     return {
       type: 'GuestCheckoutFailed',
       data: {
         guestStayAccountId,
         groupCheckoutId,
-        reason: 'NotOpened',
+        reason: 'NotCheckedIn',
         failedAt: now,
       },
     };
@@ -165,8 +165,8 @@ export const decide = (
   }
 };
 
-const assertDoesNotExist = (state: GuestStayAccount): state is Opened => {
-  if (state.status === 'Opened')
+const assertDoesNotExist = (state: GuestStayAccount): state is CheckedIn => {
+  if (state.status === 'CheckedIn')
     throw new IllegalStateError(`Guest is already checked-in!`);
 
   if (state.status === 'CheckedOut')
@@ -175,7 +175,7 @@ const assertDoesNotExist = (state: GuestStayAccount): state is Opened => {
   return true;
 };
 
-const assertIsOpened = (state: GuestStayAccount): state is Opened => {
+const assertIsCheckedIn = (state: GuestStayAccount): state is CheckedIn => {
   if (state.status === 'NotExisting')
     throw new IllegalStateError(`Guest account doesn't exist!`);
 

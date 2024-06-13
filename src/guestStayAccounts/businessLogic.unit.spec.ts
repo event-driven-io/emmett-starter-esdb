@@ -101,7 +101,7 @@ void describe('Guest Stay Account', () => {
             data: {
               guestStayAccountId,
               groupCheckoutId: undefined,
-              reason: 'NotOpened',
+              reason: 'NotCheckedIn',
               failedAt: now,
             },
           },
@@ -491,7 +491,7 @@ void describe('Guest Stay Account', () => {
             data: {
               guestStayAccountId,
               groupCheckoutId: undefined,
-              reason: 'NotOpened',
+              reason: 'NotCheckedIn',
               failedAt: now,
             },
           },

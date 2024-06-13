@@ -220,6 +220,6 @@ describe('guestStayAccount E2E', () => {
     void it(`doesn't checkout`, () =>
       given(...checkedOutAccount)
         .when(checkOut)
-        .then([expectError(403, { detail: `NotOpened` })]));
+        .then([expectError(403, { detail: `NotCheckedIn` })]));
   });
 });

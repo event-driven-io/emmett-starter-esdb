@@ -55,7 +55,7 @@ type CheckOutRequest = Request<
   unknown
 >;
 
-type GetShoppingCartRequest = Request<
+type GetGuestStayAccountDetailsRequest = Request<
   Partial<{ guestId: string; roomId: string; checkInDate: string }>,
   unknown,
   unknown
@@ -153,7 +153,7 @@ export const guestStayAccountsApi =
       }),
     );
 
-    // CheckOut Shopping Cart
+    // CheckOut Guest
     router.delete(
       '/guests/:guestId/stays/:roomId/periods/:checkInDate',
       on(async (request: CheckOutRequest) => {
@@ -179,10 +179,10 @@ export const guestStayAccountsApi =
       }),
     );
 
-    // Get Shopping Cart
+    // Get Guest Stay Account Details
     router.get(
       '/guests/:guestId/stays/:roomId/periods/:checkInDate',
-      on(async (request: GetShoppingCartRequest) => {
+      on(async (request: GetGuestStayAccountDetailsRequest) => {
         const guestStayAccountId = parseGuestStayAccountId(request.params);
 
         const result = await getGuestStayDetails(
@@ -192,7 +192,7 @@ export const guestStayAccountsApi =
 
         if (result === null) return NotFound();
 
-        if (result.state.status !== 'Opened') return NotFound();
+        if (result.state.status !== 'CheckedIn') return NotFound();
 
         return OK({
           body: result.state,

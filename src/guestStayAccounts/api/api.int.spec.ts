@@ -2,6 +2,7 @@ import {
   formatDateToUtcYYYYMMDD,
   getInMemoryEventStore,
   type EventStore,
+  type TestEventStream,
 } from '@event-driven-io/emmett';
 import {
   ApiSpecification,
@@ -12,7 +13,6 @@ import {
   getApplication,
   type TestRequest,
 } from '@event-driven-io/emmett-expressjs';
-import type { TestEventStream } from '@event-driven-io/emmett-expressjs/dist/testing/utils';
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, it } from 'node:test';
 import {
@@ -426,14 +426,14 @@ void describe('Guest stay account', () => {
       given(checkedOutAccount)
         .when(checkOut)
         .then([
-          expectError(403, { detail: `NotOpened` }),
+          expectError(403, { detail: `NotCheckedIn` }),
           expectNewEvents(guestStayAccountId, [
             {
               type: 'GuestCheckoutFailed',
               data: {
                 guestStayAccountId,
                 groupCheckoutId: undefined,
-                reason: 'NotOpened',
+                reason: 'NotCheckedIn',
                 failedAt: now,
               },
             },

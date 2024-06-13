@@ -3,11 +3,11 @@ import type { GuestStayAccountEvent } from './guestStayAccount';
 
 export type NotExisting = { status: 'NotExisting' };
 
-export type Opened = {
+export type CheckedIn = {
   id: string;
   guestId: string;
   roomId: string;
-  status: 'Opened' | 'CheckedOut';
+  status: 'CheckedIn' | 'CheckedOut';
   balance: number;
   transactionsCount: number;
   transactions: { id: string; amount: number }[];
@@ -15,7 +15,7 @@ export type Opened = {
   checkedOutAt?: Date;
 };
 
-export type GuestStayDetails = NotExisting | Opened;
+export type GuestStayDetails = NotExisting | CheckedIn;
 
 export const initialState = (): GuestStayDetails => ({
   status: 'NotExisting',
@@ -32,7 +32,7 @@ export const evolve = (
             id: event.guestStayAccountId,
             guestId: event.guestId,
             roomId: event.roomId,
-            status: 'Opened',
+            status: 'CheckedIn',
             balance: 0,
             transactionsCount: 0,
             transactions: [],
@@ -41,7 +41,7 @@ export const evolve = (
         : state;
     }
     case 'ChargeRecorded': {
-      return state.status === 'Opened'
+      return state.status === 'CheckedIn'
         ? {
             ...state,
             balance: state.balance - event.amount,
@@ -54,7 +54,7 @@ export const evolve = (
         : state;
     }
     case 'PaymentRecorded': {
-      return state.status === 'Opened'
+      return state.status === 'CheckedIn'
         ? {
             ...state,
             balance: state.balance + event.amount,
@@ -67,7 +67,7 @@ export const evolve = (
         : state;
     }
     case 'GuestCheckedOut': {
-      return state.status === 'Opened'
+      return state.status === 'CheckedIn'
         ? {
             ...state,
             status: 'CheckedOut',
