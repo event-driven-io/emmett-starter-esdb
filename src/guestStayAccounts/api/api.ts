@@ -33,7 +33,7 @@ import {
 } from '../guestStayAccount';
 import { getGuestStayDetails } from '../guestStayDetails';
 
-export const handle = CommandHandler(evolve, initialState);
+export const handle = CommandHandler({ evolve, initialState });
 
 type CheckInRequest = Request<Partial<{ guestId: string; roomId: string }>>;
 
